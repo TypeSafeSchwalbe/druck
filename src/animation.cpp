@@ -1,5 +1,5 @@
 
-#include "animation.hpp"
+#include "druck/animation.hpp"
 
 namespace druck::animation {
 

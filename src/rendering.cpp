@@ -1,5 +1,5 @@
 
-#include "druck.hpp"
+#include "druck/window.hpp"
 #include <cstring>
 #include <iostream>
 

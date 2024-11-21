@@ -1,6 +1,6 @@
 
-#include "resources.hpp"
-#include "logging.hpp"
+#include "druck/resources.hpp"
+#include "druck/logging.hpp"
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -16,15 +16,14 @@ namespace animation = druck::animation;
 
 namespace druck::resources {
 
-    template<typename T>
-    static std::ifstream open_stream(T file) {
+    static std::ifstream open_stream(std::string file) {
         auto stream = std::ifstream(file);
         if(stream.fail()) {
             logging::error(
-                "The file '" + std::string(file) + "' could not be read"
+                "The file '" + file + "' could not be read"
             );
         }
-        logging::info("Reading file '" + std::string(file) + "'");
+        logging::info("Reading file '" + file + "'");
         return stream;
     }
 
@@ -120,7 +119,7 @@ namespace druck::resources {
             // read the buffer from the path (relative to the gltf file path)
             json& buff_j = j["buffers"][buff_i];
             fs::path buff_file = dir / fs::path(buff_j["uri"]);
-            auto buff_stream = open_stream(buff_file);
+            auto buff_stream = open_stream(buff_file.string());
             auto buffer = std::vector(
                 std::istreambuf_iterator<char>(buff_stream), 
                 std::istreambuf_iterator<char>()
@@ -129,7 +128,7 @@ namespace druck::resources {
             size_t expected_size = buff_j["byteLength"];
             if(buffer.size() != expected_size) {
                 logging::warning(
-                    "Buffer read from file '" + std::string(buff_file)
+                    "Buffer read from file '" + buff_file.string()
                         + "' has a size ("  + std::to_string(buffer.size())
                         + ") that does not match the expected size (" 
                         + std::to_string(expected_size)

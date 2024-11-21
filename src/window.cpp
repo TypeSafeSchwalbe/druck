@@ -1,6 +1,6 @@
 
-#include "druck.hpp"
-#include "logging.hpp"
+#include "druck/window.hpp"
+#include "druck/logging.hpp"
 #include <cstdlib>
 #include <utility>
 
