@@ -36,7 +36,7 @@ void render_car() {
     auto shader = ModelShader();
     shader.tex = &car_tex;
     shader.projection = Mat<4>::perspective(
-        PI / 2.0, WINDOW_SIZE, WINDOW_SIZE, 0.1, 1000.0
+        pi / 2.0, WINDOW_SIZE, WINDOW_SIZE, 0.1, 1000.0
     );
     shader.view = Mat<4>::look_at(
         Vec<3>(0, 3, 6), // camera position

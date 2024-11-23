@@ -36,14 +36,12 @@ namespace druck::animation {
 
     template<typename B>
     static void propagate_anim_transform(
-        const Mat<4>* parent_transform, B& bone, std::vector<B>& bones
+        B& bone, std::vector<B>& bones
     ) {
-        if(parent_transform != NULL) {
-            bone.anim_transform = bone.anim_transform * *parent_transform;
-        }
         for(size_t child_i = 0; child_i < bone.children.size(); child_i += 1) {
             B& child = bones[bone.children[child_i]];
-            propagate_anim_transform(&bone.anim_transform, child, bones);
+            child.anim_transform = bone.anim_transform * child.anim_transform;
+            propagate_anim_transform(child, bones);
         }
     }
 
@@ -59,7 +57,7 @@ namespace druck::animation {
 
         template<typename B>
         void compute_transforms(
-            std::vector<B>& bones, size_t root_bone, double timestamp
+            std::vector<B>& bones, size_t root_bone_i, double timestamp
         ) const {
             size_t joint_count = this->keyframes.size();
             assert(bones.size() == joint_count);
@@ -70,7 +68,8 @@ namespace druck::animation {
                     frame.translation, frame.rotation, frame.scale
                 );
             }
-            propagate_anim_transform(NULL, bones[root_bone], bones);
+            B& root_bone = bones[root_bone_i];
+            propagate_anim_transform(root_bone, bones);
             for(size_t joint_i = 0; joint_i < joint_count; joint_i += 1) {
                 B& bone = bones[joint_i];
                 bone.anim_transform = bone.anim_transform * bone.inverse_bind;

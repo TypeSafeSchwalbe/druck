@@ -10,6 +10,8 @@
 
 namespace druck::math {
 
+    const double pi = 3.141592653589793238463;
+
     template<int N>
     struct Vec {
         double elements[N];

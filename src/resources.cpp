@@ -215,15 +215,26 @@ namespace druck::resources {
         // get the root bone
         json& scene = j["scenes"][(size_t) j["scene"]];
         *root_node = &j["nodes"][(size_t) scene["nodes"][0]];
+        size_t root_node_cc = (**root_node)["children"].size();
         size_t root_bone_idx = joint_count;
         model.bones.push_back(RiggedModelBone());
         RiggedModelBone& root_bone = model.bones[root_bone_idx];
         model.root_bone_i = root_bone_idx;
         // read children for all joints
         for(size_t joint_idx = 0; joint_idx < joint_count; joint_idx += 1) {
-            root_bone.children.push_back(joint_idx);
             RiggedModelBone& bone = model.bones[joint_idx];
             size_t node_idx = skin["joints"][joint_idx];
+            bool is_child_of_root = false;
+            for(size_t rc_i = 0; rc_i < root_node_cc; rc_i += 1) {
+                size_t c_node_i = (**root_node)["children"][rc_i];
+                if(c_node_i == node_idx) {
+                    is_child_of_root = true;
+                    break;
+                }
+            }
+            if(is_child_of_root) {
+                root_bone.children.push_back(joint_idx);
+            }
             json& node = j["nodes"][node_idx];
             size_t child_count = node["children"].size();
             for(size_t child_idx = 0; child_idx < child_count; child_idx += 1) {
