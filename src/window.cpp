@@ -42,7 +42,7 @@ namespace druck {
 
     void stop() {
         CloseWindow();
-        std::exit(1);
+        std::exit(0);
     }
 
 }
