@@ -207,9 +207,9 @@ namespace druck::rendering {
             vs.c_idepth = 1.0 / c_ndc.z();
             // convert vertices to pixel space
             Mat<4> to_pixel_space
-                = Mat<4>::translate(Vec<2>(this->width, this->height))
-                * Mat<4>::scale(Vec<2>(this->width / 2 * -1, this->height / 2 * -1))
-                * Mat<4>::translate(Vec<2>(1.0, 1.0));
+                = Mat<4>::translate(Vec<2>(0, this->height))
+                * Mat<4>::scale(Vec<2>(this->width / 2, this->height / 2 * -1))
+                * Mat<4>::translate(Vec<2>(1, 1));
             Vec<3> a = (to_pixel_space * (a_ndc / a_ndc.w())).swizzle<3>("xyz");
             Vec<3> b = (to_pixel_space * (b_ndc / b_ndc.w())).swizzle<3>("xyz");
             Vec<3> c = (to_pixel_space * (c_ndc / c_ndc.w())).swizzle<3>("xyz");
