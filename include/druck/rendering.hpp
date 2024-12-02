@@ -83,31 +83,45 @@ namespace druck::rendering {
             this->vertex_states = nullptr;
         }
 
-        template<typename T>
-        void interpolate(T* value) {
-            // check that pointers are correct
+        private:
+        int64_t verify_property_pointer(void* p) {
             if(this->vertex_states == nullptr) {
                 std::cout << "'interpolate' can only be called from 'fragment'!" 
                     << std::endl;
                 std::abort();
             }
-            int64_t offset = (char*) value - (char*) this;
+            int64_t offset = (char*) p - (char*) this;
             if(offset < 0 || (size_t) offset > sizeof(S)) {
                 std::cout << "Interpolated value must be a shader property!" 
                     << std::endl;
                 std::abort();
             }
+            return offset;
+        }
+
+        public:
+        template<typename T>
+        void interpolate(T* property) {
+            int64_t offset = this->verify_property_pointer(property);
             const VertexStates<V, S>* vs = this->vertex_states;
             // get values for all three vertices
             const T* a = (const T*) ((char*) &vs->a_state + offset);
             const T* b = (const T*) ((char*) &vs->b_state + offset);
             const T* c = (const T*) ((char*) &vs->c_state + offset);
             // interpolate them using the barycentric coordinates
-            *value = (
+            *property = (
                 (*a * vs->a_idepth * vs->a_bc) + 
                 (*b * vs->b_idepth * vs->b_bc) + 
                 (*c * vs->c_idepth * vs->c_bc)
             ) * vs->depth;
+        }
+
+        template<typename T>
+        void flat(T* property) {
+            int64_t offset = this->verify_property_pointer(property);
+            const VertexStates<V, S>* vs = this->vertex_states;
+            const T* value = (const T*) ((char*) &vs->a_state + offset);
+            *property = *value;
         }
     };
 
