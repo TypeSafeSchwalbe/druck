@@ -6,7 +6,7 @@
 namespace druck::math {
 
     double perlin_noise(uint32_t seed, const Vec<2>& pos) {
-        return siv::PerlinNoise(seed).octave2D_01(pos.x(), pos.y(), 4);
+        return siv::PerlinNoise(seed).octave2D_11(pos.x(), pos.y(), 4);
     }
 
 
