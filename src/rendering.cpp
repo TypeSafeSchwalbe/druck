@@ -3,6 +3,7 @@
 #include <cstring>
 #include <iostream>
 
+
 namespace druck::rendering {
 
     using namespace druck::math;
@@ -137,10 +138,6 @@ namespace druck::rendering {
         int y_px = this->height - static_cast<int>(v * this->height);
         if(y_px >= this->height) { y_px = this->height - 1; }
         // read the color and return as normalized vector
-        assert(x_px >= 0);
-        assert(x_px < this->width);
-        assert(y_px >= 0);
-        assert(y_px < this->height);
         Color color = this->color[y_px * this->width + x_px];
         return Vec<4>(
             color.r / 255.0, color.g / 255.0, color.b / 255.0, color.a / 255

@@ -5,12 +5,13 @@
 #include <cmath>
 #include <iostream>
 #include <cstring>
+#include <stdint.h>
 
-#include <cassert>
 
 namespace druck::math {
 
     const double pi = 3.141592653589793238463;
+
 
     template<int N>
     struct Vec {
@@ -507,6 +508,19 @@ namespace druck::math {
             return sum;
         }
 
+    };
+
+
+    double perlin_noise(uint32_t seed, const Vec<2>& pos);
+
+
+    struct StatefulRNG {
+        uint64_t state;
+
+        StatefulRNG(uint64_t seed);
+
+        double next_float();
+        uint64_t next_int();
     };
 
 }
