@@ -1,6 +1,6 @@
 
-#include "druck/resources.hpp"
-#include "druck/logging.hpp"
+#include <druck/resources.hpp>
+#include <druck/logging.hpp>
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -105,7 +105,10 @@ namespace druck::resources {
             );
         }
         Color* data = LoadImageColors(img);
-        auto surface = rendering::Surface(data, nullptr, img.width, img.height);
+        auto surface = rendering::Surface(
+            (rendering::Color*) data, nullptr, 
+            img.width, img.height
+        );
         UnloadImageColors(data);
         UnloadImage(img);
         return surface;

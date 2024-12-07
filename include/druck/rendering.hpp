@@ -7,6 +7,8 @@
 #include <cstdint>
 #include "math.hpp"
 
+#include <cassert>
+
 
 namespace druck::rendering {
 
@@ -20,6 +22,22 @@ namespace druck::rendering {
                 + c.x() * (a.y() - b.y())
         );
     }
+
+    struct Color {
+        uint8_t r;
+        uint8_t g;
+        uint8_t b;
+        uint8_t a;
+
+        static Color from_floats(const Vec<4>& color) {
+            return {
+                static_cast<uint8_t>(color.r() * 255.0),
+                static_cast<uint8_t>(color.g() * 255.0),
+                static_cast<uint8_t>(color.b() * 255.0),
+                static_cast<uint8_t>(color.a() * 255.0)
+            };
+        }
+    };
 
     template<typename V>
     struct Mesh {
@@ -147,6 +165,8 @@ namespace druck::rendering {
         void set_depth_at(int x, int y, double d);
         Vec<4> sample(const Vec<2>& uv) const;
 
+        void resize(int width, int height);
+        void resize(const Vec<2>& size);
         void clear();
 
         void blit_buffer(
@@ -181,57 +201,48 @@ namespace druck::rendering {
                     vs->a_bc = triangle_area(p, b.swizzle<2>("xy"), c.swizzle<2>("xy")) / t_area;
                     vs->b_bc = triangle_area(p, c.swizzle<2>("xy"), a.swizzle<2>("xy")) / t_area;
                     vs->c_bc = triangle_area(p, a.swizzle<2>("xy"), b.swizzle<2>("xy")) / t_area;
-                    vs->depth = 1.0 / (
-                        vs->a_bc * vs->a_idepth +
-                        vs->b_bc * vs->b_idepth + 
-                        vs->c_bc * vs->c_idepth
-                    );
-                    if(vs->depth >= this->get_depth_at(x, y)) {
-                        continue;
-                    }
-                    Vec<4> fr_color = shader.fragment();
-                    Color color;
-                    color.r = fr_color.r() * 255.0;
-                    color.g = fr_color.g() * 255.0;
-                    color.b = fr_color.b() * 255.0;
-                    color.a = fr_color.a() * 255.0;
+                    double px_idepth = vs->a_bc * vs->a_idepth
+                        + vs->b_bc * vs->b_idepth
+                        + vs->c_bc * vs->c_idepth;
+                    if(px_idepth == 0.0) { continue; }
+                    vs->depth = 1.0 / px_idepth;
+                    if(vs->depth <= 0.0) { continue; }
+                    if(vs->depth >= this->get_depth_at(x, y)) { continue; }
+                    Color color = Color::from_floats(shader.fragment());
                     this->set_color_at(x, y, color);
                     this->set_depth_at(x, y, vs->depth);
                 }
             }
         }
 
-        #define RENDERER_MIN_DEPTH 0.0000005
-
         template<typename V, typename S>
         void draw_triangle(V vertex_a, V vertex_b, V vertex_c, S& shader) {
             VertexStates<V, S> vs;
             // get positions from vertex shader
             vs.a_state = shader;
-            Vec<4> a_ndc = vs.a_state.vertex(vertex_a);
-            if(a_ndc.z() < RENDERER_MIN_DEPTH) { a_ndc.z() = RENDERER_MIN_DEPTH; }
-            vs.a_idepth = 1.0 / a_ndc.z();
+            Vec<4> a_clip = vs.a_state.vertex(vertex_a);
+            if(a_clip.w() <= 0 || a_clip.z() == 0) { return; }
+            vs.a_idepth = 1.0 / a_clip.z();
             vs.b_state = shader;
-            Vec<4> b_ndc = vs.b_state.vertex(vertex_b);
-            if(b_ndc.z() < RENDERER_MIN_DEPTH) { b_ndc.z() = RENDERER_MIN_DEPTH; }
-            vs.b_idepth = 1.0 / b_ndc.z();
+            Vec<4> b_clip = vs.b_state.vertex(vertex_b);
+            if(b_clip.w() <= 0 || b_clip.z() == 0) { return; }
+            vs.b_idepth = 1.0 / b_clip.z();
             vs.c_state = shader;
-            Vec<4> c_ndc = vs.c_state.vertex(vertex_c);
-            if(c_ndc.z() < RENDERER_MIN_DEPTH) { c_ndc.z() = RENDERER_MIN_DEPTH; }
-            vs.c_idepth = 1.0 / c_ndc.z();
+            Vec<4> c_clip = vs.c_state.vertex(vertex_c);
+            if(c_clip.w() <= 0 || c_clip.z() == 0) { return; }
+            vs.c_idepth = 1.0 / c_clip.z();
+            // perform perspective division
+            Vec<3> a_ndc = a_clip.swizzle<3>("xyz") / a_clip.w();
+            Vec<3> b_ndc = b_clip.swizzle<3>("xyz") / b_clip.w();
+            Vec<3> c_ndc = c_clip.swizzle<3>("xyz") / c_clip.w();
             // convert vertices to pixel space
-            Mat<4> to_pixel_space
-                = Mat<4>::translate(Vec<2>(0, this->height))
-                * Mat<4>::scale(Vec<2>(this->width / 2, this->height / 2 * -1))
-                * Mat<4>::translate(Vec<2>(1, 1));
-            Vec<3> a = (to_pixel_space * (a_ndc / a_ndc.w())).swizzle<3>("xyz");
-            Vec<3> b = (to_pixel_space * (b_ndc / b_ndc.w())).swizzle<3>("xyz");
-            Vec<3> c = (to_pixel_space * (c_ndc / c_ndc.w())).swizzle<3>("xyz");
-            // return if all vertices out of bounds
-            bool is_on_screen = this->contains(a.x(), a.y())
-                || this->contains(b.x(), b.y())
-                || this->contains(c.x(), c.y());
-            if(!is_on_screen) { return; }
+            Mat<3> to_pixel_space
+                = Mat<3>::translate(Vec<2>(0, this->height))
+                * Mat<3>::scale(Vec<2>(this->width / 2, this->height / 2 * -1))
+                * Mat<3>::translate(Vec<2>(1, 1));
+            Vec<3> a = to_pixel_space * a_ndc;
+            Vec<3> b = to_pixel_space * b_ndc;
+            Vec<3> c = to_pixel_space * c_ndc;
             // sort vertex pixel positions (a, b, c in order of ascending y)
             if(a.y() > b.y()) {
                 std::swap(a, b);

@@ -1,10 +1,13 @@
 
-#include "druck/window.hpp"
-#include "druck/logging.hpp"
+#include <druck/window.hpp>
+#include <druck/logging.hpp>
 #include <cstdlib>
 #include <utility>
 
-namespace druck {
+namespace druck::window {
+
+    using namespace druck::math;
+
 
     void init(const char* title, int width, int height, int fps) {
         SetTraceLogLevel(LOG_ERROR);
@@ -14,15 +17,21 @@ namespace druck {
         SetTargetFPS(fps);
     }
 
-    bool is_running() {
-        return !WindowShouldClose();
+    bool should_close() {
+        return WindowShouldClose();
     }
 
-    void display_buffer(rendering::Surface* buffer) {
+    int width() { return GetScreenWidth(); }
+    int height() { return GetScreenHeight(); }
+    Vec<2> size() { return Vec<2>(width(), height()); }
+
+    double delta_time() { return GetFrameTime(); }
+
+    void display_buffer(rendering::Surface& buffer) {
         Image img;
-        img.data = buffer->color;
-        img.width = buffer->width;
-        img.height = buffer->height;
+        img.data = buffer.color;
+        img.width = buffer.width;
+        img.height = buffer.height;
         img.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
         img.mipmaps = 1;
         Texture2D texture = LoadTextureFromImage(img);
@@ -31,18 +40,10 @@ namespace druck {
         DrawTexture(texture, 0, 0, WHITE);
         EndDrawing();
         UnloadTexture(texture);
-        bool buffer_size_correct = buffer->width == GetScreenWidth()
-            && buffer->height == GetScreenHeight();
-        if(buffer_size_correct) { return; }
-        auto new_buffer = rendering::Surface(
-            GetScreenWidth(), GetScreenHeight()
-        );
-        *buffer = std::move(new_buffer);
     }
 
-    void stop() {
+    void close() {
         CloseWindow();
-        std::exit(0);
     }
 
 }

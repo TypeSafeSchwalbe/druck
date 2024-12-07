@@ -1,46 +1,56 @@
 
-#include "druck/window.hpp"
+#include <druck/window.hpp>
+#include <druck/logging.hpp>
 #include <cstring>
+#include <string>
 #include <iostream>
+#include <cassert>
 
 
 namespace druck::rendering {
 
     using namespace druck::math;
+    namespace logging = druck::logging;
     
-    
+
     Surface::Surface(int width, int height) {
-        if(width < 0 || height < 0) {
-            std::cout << "'width' and 'height' must both be positive!"
-                << std::endl;
-            std::abort();
+        if(width <= 0) {
+            logging::error(
+                std::string("Surface width must be larger than 0 (given was ") 
+                    + std::to_string(width) + ")"
+            );
+        }
+        if(height <= 0) {
+            logging::error(
+                std::string("Surface height must be larger than 0 (given was ") 
+                    + std::to_string(height) + ")"
+            );
         }
         this->width = width;
         this->height = height;
         this->color = new Color[width * height];
         this->depth = new float[width * height];
-        for(int y = 0; y < height; y += 1) {
-            for(int x = 0; x < width; x += 1) {
-                this->color[y * width + x] = BLACK;
-                this->depth[y * width + x] = INFINITY;
-            }
-        }
+        this->clear();
     }
 
     Surface::Surface(
         const Color* color, const float* depth, int width, int height
     ) {
-        if(width < 0 || height < 0) {
-            std::cout << "'width' and 'height' must both be positive!"
-                << std::endl;
-            std::abort();
+        if(width <= 0) {
+            logging::error(
+                std::string("Surface width must be larger than 0 (given was ") 
+                    + std::to_string(width) + ")"
+            );
         }
+        if(height <= 0) {
+            logging::error(
+                std::string("Surface height must be larger than 0 (given was ") 
+                    + std::to_string(height) + ")"
+            );
+        }
+        assert(color != nullptr);
         this->width = width;
-        this->height = height; 
-        if(color == nullptr) {
-            std::cout << "'color' must not be a null pointer!" << std::endl;
-            std::abort();
-        }
+        this->height = height;
         this->color = new Color[width * height];
         if(depth == nullptr) {
             this->depth = nullptr;
@@ -144,12 +154,44 @@ namespace druck::rendering {
         );
     }
 
+    void Surface::resize(int width, int height) {
+        if(width == this->width && height == this->height) { return; }
+        if(width <= 0) {
+            logging::error(
+                std::string("Surface width must be larger than 0 (given was ") 
+                    + std::to_string(width) + ")"
+            );
+        }
+        if(height <= 0) {
+            logging::error(
+                std::string("Surface height must be larger than 0 (given was ") 
+                    + std::to_string(height) + ")"
+            );
+        }
+        this->width = width;
+        this->height = height;
+        if(this->color != nullptr) {
+            delete[] this->color;
+        }
+        this->color = new Color[width * height];
+        if(this->depth != nullptr) {
+            delete[] this->depth;
+            this->depth = new float[width * height];
+        }
+        this->clear();
+    }
+
+    void Surface::resize(const Vec<2>& size) {
+        this->resize(size.x(), size.y());
+    }
+
     void Surface::clear() {
         for(int i = 0; i < this->width * this->height; i += 1) {
             this->color[i] = BLACK;
-            if(this->depth != nullptr) {
-                this->depth[i] = INFINITY;
-            }
+        }
+        if(this->depth == nullptr) { return; }
+        for(int i = 0; i < this->width * this->height; i += 1) {
+            this->depth[i] = INFINITY;
         }
     }
 
